@@ -70,7 +70,7 @@ export default function NewIncomePage() {
       return
     }
 
-    router.push('/dashboard')
+    router.push('/income')
   }
 
   return (

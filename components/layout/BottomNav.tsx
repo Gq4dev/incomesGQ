@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart2, Users, PlusCircle } from 'lucide-react'
+import { BarChart2, Users, TrendingUp, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/dashboard', label: 'Resumen', icon: BarChart2 },
-  { href: '/income/new', label: 'Cargar', icon: PlusCircle },
+  { href: '/income', label: 'Ingresos', icon: TrendingUp },
+  { href: '/expenses', label: 'Egresos', icon: TrendingDown },
   { href: '/providers', label: 'Clientes', icon: Users },
 ]
 
@@ -27,7 +28,7 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
-              className="flex flex-col items-center gap-1 min-w-[60px] min-h-[44px] justify-center"
+              className="flex flex-col items-center gap-1 min-w-[52px] min-h-[44px] justify-center"
             >
               <div className={cn(
                 'flex items-center justify-center w-10 h-6 rounded-full transition-all duration-200',

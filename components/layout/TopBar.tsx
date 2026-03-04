@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/dashboard', label: 'Resumen' },
-  { href: '/income/new', label: 'Cargar' },
+  { href: '/income', label: 'Ingresos' },
+  { href: '/expenses', label: 'Egresos' },
   { href: '/providers', label: 'Clientes' },
 ]
 

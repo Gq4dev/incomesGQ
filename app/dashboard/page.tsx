@@ -1,18 +1,13 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { IncomeEntry, Provider } from '@/types'
-import { formatARS, formatUSD } from '@/lib/utils/currency'
+import { IncomeEntry, ExpenseEntry } from '@/types'
+import { formatARS } from '@/lib/utils/currency'
 import { formatMonthYear } from '@/lib/utils/date'
 import { usePrivacyMode } from '@/hooks/usePrivacyMode'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
 import {
   Select,
   SelectContent,
@@ -20,238 +15,244 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ChevronDown } from 'lucide-react'
-import { MonthlyChart, ChartEntry } from '@/components/income/MonthlyChart'
+import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react'
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts'
 import { cn } from '@/lib/utils'
+
+function CustomTooltip({ active, payload, label, mask }: any) {
+  if (!active || !payload?.length) return null
+  const ingresos = payload.find((p: any) => p.dataKey === 'ingresos')?.value ?? 0
+  const egresos = payload.find((p: any) => p.dataKey === 'egresos')?.value ?? 0
+  const neto = ingresos - egresos
+  return (
+    <div className="bg-background border border-border rounded-xl px-3 py-2.5 text-xs shadow-lg min-w-[160px]">
+      <p className="font-semibold mb-2 capitalize text-foreground">{formatMonthYear(label)}</p>
+      <div className="flex justify-between gap-3 mb-1">
+        <span className="text-muted-foreground flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'hsl(264, 70%, 55%)' }} />
+          Ingresos
+        </span>
+        <span className="font-semibold tabular-nums">{mask(formatARS(ingresos))}</span>
+      </div>
+      <div className="flex justify-between gap-3 mb-1">
+        <span className="text-muted-foreground flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'hsl(0, 72%, 51%)' }} />
+          Egresos
+        </span>
+        <span className="font-semibold tabular-nums">{mask(formatARS(egresos))}</span>
+      </div>
+      <div className="flex justify-between border-t border-border pt-1.5 mt-1.5">
+        <span className="text-muted-foreground">Neto</span>
+        <span className={cn('font-bold tabular-nums', neto >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
+          {mask(formatARS(neto))}
+        </span>
+      </div>
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const supabase = createClient()
   const { mask } = usePrivacyMode()
 
-  const [entries, setEntries] = useState<IncomeEntry[]>([])
-  const [providers, setProviders] = useState<Provider[]>([])
-  const [filterProvider, setFilterProvider] = useState('all')
+  const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([])
+  const [expenseEntries, setExpenseEntries] = useState<ExpenseEntry[]>([])
   const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()))
   const [loading, setLoading] = useState(true)
-  const [openMonths, setOpenMonths] = useState<Set<string>>(new Set())
 
   const fetchData = useCallback(async () => {
-    const [{ data: entriesData }, { data: providersData }] = await Promise.all([
-      supabase
-        .from('income_entries')
-        .select('*, provider:providers(id, name, created_at)')
-        .order('date', { ascending: false }),
-      supabase.from('providers').select('*').order('name'),
+    const [{ data: income }, { data: expenses }] = await Promise.all([
+      supabase.from('income_entries').select('*').order('date', { ascending: false }),
+      supabase.from('expense_entries').select('*').order('date', { ascending: false }),
     ])
-    setEntries(entriesData ?? [])
-    setProviders(providersData ?? [])
+    setIncomeEntries(income ?? [])
+    setExpenseEntries(expenses ?? [])
     setLoading(false)
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const filtered = entries.filter((e) => {
-    const matchProvider = filterProvider === 'all' || e.provider_id === filterProvider
-    const matchYear = e.date.startsWith(filterYear)
-    return matchProvider && matchYear
-  })
+  const filteredIncome = incomeEntries.filter((e) => e.date.startsWith(filterYear))
+  const filteredExpenses = expenseEntries.filter((e) => e.date.startsWith(filterYear))
 
-  const totalARS = filtered.reduce((s, e) => s + e.amount_ars, 0)
-  const totalUSD = filtered.reduce((s, e) => s + e.amount_usd, 0)
+  const totalIngresos = filteredIncome.reduce((s, e) => s + e.amount_ars, 0)
+  const totalEgresos = filteredExpenses.reduce((s, e) => s + e.amount_ars, 0)
+  const neto = totalIngresos - totalEgresos
 
-  // Chart data: por mes con una key por proveedor para stacked bars
-  const chartData = Object.values(
-    filtered.reduce<Record<string, { date: string; [key: string]: number | string }>>(
-      (acc, e) => {
-        if (!acc[e.date]) acc[e.date] = { date: e.date }
-        acc[e.date][e.provider_id] = ((acc[e.date][e.provider_id] as number) || 0) + e.amount_ars
-        return acc
-      },
-      {}
-    )
-  )
-
-  // Solo proveedores que aparecen en el período filtrado
-  const activeProviderIds = new Set(filtered.map((e) => e.provider_id))
-  const chartProviders = providers.filter((p) => activeProviderIds.has(p.id))
-
-  const byMonth = filtered.reduce<Record<string, IncomeEntry[]>>((acc, e) => {
-    acc[e.date] = acc[e.date] ? [...acc[e.date], e] : [e]
-    return acc
-  }, {})
-  const months = Object.keys(byMonth).sort((a, b) => b.localeCompare(a))
-  const years = [...new Set(entries.map((e) => e.date.slice(0, 4)))].sort((a, b) => b.localeCompare(a))
-
-  // Abrir el mes más reciente automáticamente cuando llegan los datos
-  const initializedRef = useRef(false)
-  useEffect(() => {
-    if (!initializedRef.current && months.length > 0) {
-      initializedRef.current = true
-      setOpenMonths(new Set([months[0]]))
-    }
-  }, [months])
-
-  function toggleMonth(month: string) {
-    setOpenMonths((prev) => {
-      const next = new Set(prev)
-      next.has(month) ? next.delete(month) : next.add(month)
-      return next
+  const allMonths = new Set([
+    ...filteredIncome.map((e) => e.date),
+    ...filteredExpenses.map((e) => e.date),
+  ])
+  const chartData = [...allMonths]
+    .sort((a, b) => a.localeCompare(b))
+    .map((month) => {
+      const ing = filteredIncome.filter((e) => e.date === month).reduce((s, e) => s + e.amount_ars, 0)
+      const egr = filteredExpenses.filter((e) => e.date === month).reduce((s, e) => s + e.amount_ars, 0)
+      return { date: month, ingresos: ing, egresos: egr, neto: ing - egr }
     })
-  }
+
+  const years = [
+    ...new Set([
+      ...incomeEntries.map((e) => e.date.slice(0, 4)),
+      ...expenseEntries.map((e) => e.date.slice(0, 4)),
+    ]),
+  ].sort((a, b) => b.localeCompare(a))
 
   return (
     <div className="space-y-5">
       <h1 className="text-xl font-semibold">Resumen</h1>
 
-      {/* Filters */}
+      {/* Filtro año */}
       <div className="flex gap-2">
         <Select value={filterYear} onValueChange={setFilterYear}>
           <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Año" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(years.length ? years : [String(new Date().getFullYear())]).map((y) => (
-              <SelectItem key={y} value={y}>{y}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={filterProvider} onValueChange={setFilterProvider}>
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Cliente" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {providers.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-            ))}
+            {years.length === 0
+              ? <SelectItem value={filterYear}>{filterYear}</SelectItem>
+              : years.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)
+            }
           </SelectContent>
         </Select>
       </div>
 
-      {/* YTD Summary */}
-      <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
-        <Card className="shadow-sm">
-          <CardContent className="flex items-center justify-between px-5 py-4 md:flex-col md:items-start md:py-5">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-              Total ARS
-            </p>
-            <p className="text-2xl font-bold tabular-nums leading-none tracking-tight md:mt-2">
-              {mask(formatARS(totalARS))}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm border-primary/20 bg-primary/5">
-          <CardContent className="flex items-center justify-between px-5 py-4 md:flex-col md:items-start md:py-5">
-            <p className="text-[11px] font-semibold text-primary/70 uppercase tracking-widest">
-              Total USD
-            </p>
-            <p className="text-2xl font-bold tabular-nums leading-none tracking-tight text-primary md:mt-2">
-              {mask(formatUSD(totalUSD))}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Chart */}
-      {chartData.length > 1 && (
-        <Card>
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-              Ingresos por mes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-2 pb-4">
-            <MonthlyChart data={chartData as ChartEntry[]} providers={chartProviders} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Monthly breakdown */}
       {loading ? (
         <p className="text-muted-foreground text-sm">Cargando...</p>
-      ) : months.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No hay ingresos para el período seleccionado.
-        </p>
       ) : (
-        <div className="space-y-5">
-          {months.map((month) => {
-            const monthEntries = byMonth[month]
-            const monthARS = monthEntries.reduce((s, e) => s + e.amount_ars, 0)
-            const monthUSD = monthEntries.reduce((s, e) => s + e.amount_usd, 0)
+        <>
+          {/* Cards Ingresos + Egresos */}
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
+            <Card className="shadow-sm border-primary/20 bg-primary/5">
+              <CardContent className="px-4 py-3 md:py-5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                  <p className="text-[10px] font-semibold text-primary/70 uppercase tracking-widest">
+                    Ingresos
+                  </p>
+                </div>
+                <p className="text-lg font-bold tabular-nums leading-none tracking-tight text-primary">
+                  {mask(formatARS(totalIngresos))}
+                </p>
+              </CardContent>
+            </Card>
 
-            return (
-              <Collapsible
-                key={month}
-                open={openMonths.has(month)}
-                onOpenChange={() => toggleMonth(month)}
-              >
-                <CollapsibleTrigger className="w-full">
-                  <div className="flex items-center justify-between px-1 py-1 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <ChevronDown className={cn(
-                        'h-3.5 w-3.5 text-muted-foreground transition-transform duration-200',
-                        openMonths.has(month) ? 'rotate-0' : '-rotate-90'
-                      )} />
-                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider capitalize">
-                        {formatMonthYear(month)}
-                      </h2>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold tabular-nums">
-                        {mask(formatARS(monthARS))}
-                      </p>
-                      <p className="text-xs text-primary font-medium tabular-nums">
-                        {mask(formatUSD(monthUSD))}
-                      </p>
-                    </div>
-                  </div>
-                </CollapsibleTrigger>
+            <Card className="shadow-sm border-destructive/20 bg-destructive/5">
+              <CardContent className="px-4 py-3 md:py-5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                  <p className="text-[10px] font-semibold text-destructive/70 uppercase tracking-widest">
+                    Egresos
+                  </p>
+                </div>
+                <p className="text-lg font-bold tabular-nums leading-none tracking-tight text-destructive">
+                  {mask(formatARS(totalEgresos))}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-                <CollapsibleContent>
-                  <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden mt-1.5">
-                    {monthEntries.map((entry, i) => (
-                      <div
-                        key={entry.id}
-                        className={`flex items-center justify-between px-4 py-3 ${
-                          i < monthEntries.length - 1 ? 'border-b border-border/60' : ''
-                        }`}
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-medium truncate">
-                              {entry.provider?.name ?? '—'}
-                            </span>
-                            {entry.notes && (
-                              <Badge variant="secondary" className="text-[10px] shrink-0 h-4 px-1.5">
-                                {entry.notes}
-                              </Badge>
-                            )}
-                          </div>
-                          <span className="text-[11px] text-muted-foreground tabular-nums">
-                            TC {mask(String(entry.usd_rate))}
-                          </span>
-                        </div>
-                        <div className="text-right shrink-0 ml-3">
-                          <p className="text-[13px] font-semibold tabular-nums">
-                            {mask(formatARS(entry.amount_ars))}
-                          </p>
-                          <p className="text-[12px] text-primary font-medium tabular-nums">
-                            {mask(formatUSD(entry.amount_usd))}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )
-          })}
-        </div>
+          {/* Neto */}
+          <Card className={cn(
+            'shadow-sm',
+            neto >= 0 ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-destructive/20 bg-destructive/5'
+          )}>
+            <CardContent className="flex items-center justify-between px-5 py-4">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                Resultado neto
+              </p>
+              <p className={cn(
+                'text-2xl font-bold tabular-nums leading-none tracking-tight',
+                neto >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+              )}>
+                {mask(formatARS(neto))}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Gráfico comparativo */}
+          {chartData.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                  Ingresos vs Egresos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-2 pb-4">
+                <div className="w-full h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="28%">
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(v) => {
+                          const [, month] = String(v).split('-')
+                          return new Date(2000, Number(month) - 1).toLocaleString('es-AR', { month: 'short' })
+                        }}
+                        tick={{ fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis hide />
+                      <Tooltip content={<CustomTooltip mask={mask} />} cursor={false} />
+                      <Legend
+                        iconSize={8}
+                        iconType="circle"
+                        wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                        formatter={(value) =>
+                          value === 'ingresos' ? 'Ingresos' : value === 'egresos' ? 'Egresos' : 'Neto'
+                        }
+                      />
+                      <Bar dataKey="ingresos" fill="hsl(264, 70%, 55%)" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="egresos" fill="hsl(0, 72%, 51%)" radius={[3, 3, 0, 0]} />
+                      <Line
+                        dataKey="neto"
+                        type="monotone"
+                        stroke="hsl(152, 57%, 40%)"
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: 'hsl(152, 57%, 40%)' }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Links rápidos */}
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              href="/income"
+              className="flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-card shadow-sm hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Ingresos</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+            <Link
+              href="/expenses"
+              className="flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-card shadow-sm hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 text-destructive" />
+                <span className="text-sm font-medium">Egresos</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          </div>
+        </>
       )}
-
     </div>
   )
 }
