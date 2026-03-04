@@ -47,12 +47,15 @@ export default function NewExpensePage() {
     if (!ars || ars <= 0) return setError('Ingresá un monto válido.')
 
     setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setError('No autenticado.'); setSaving(false); return }
     const { error: dbError } = await supabase.from('expense_entries').insert({
       category,
       is_fixed: isFixed,
       description: description.trim() || null,
       amount_ars: ars,
       date,
+      user_id: user.id,
     })
 
     if (dbError) {

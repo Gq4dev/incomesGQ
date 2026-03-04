@@ -56,12 +56,15 @@ export default function NewIncomePage() {
     if (!rate || rate <= 0) return setError('Ingresá el tipo de cambio.')
 
     setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setError('No autenticado.'); setSaving(false); return }
     const { error: dbError } = await supabase.from('income_entries').insert({
       provider_id: providerId,
       amount_ars: ars,
       usd_rate: rate,
       date,
       notes: notes.trim() || null,
+      user_id: user.id,
     })
 
     if (dbError) {
