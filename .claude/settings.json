@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Guillote/Desktop/**)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes --name gq4)",
+      "Bash(npx create-next-app@latest income-tracker --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(node -e \"const p=require\\(''./package.json''\\); p.name=''gq4''; require\\(''fs''\\).writeFileSync\\(''./package.json'', JSON.stringify\\(p, null, 2\\)\\)\")",
+      "Bash(npx shadcn@latest init --defaults --yes)",
+      "Bash(npx shadcn@latest add button card input label select badge sheet dialog dropdown-menu tabs --yes)",
+      "Bash(npm install @supabase/supabase-js @supabase/ssr)",
+      "Bash(npm install lucide-react)",
+      "Bash(npm run build)",
+      "Bash(npm install recharts)",
+      "Bash(npx shadcn@latest add collapsible --yes)"
+    ]
+  }
+}
