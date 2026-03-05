@@ -33,7 +33,12 @@ export function TopBar() {
     <header className="sticky top-0 z-40 bg-background border-b border-border">
       <div className="flex items-center justify-between h-14 px-4 max-w-2xl mx-auto">
         <div className="flex items-center gap-6">
-          <span className="font-semibold text-base tracking-tight">GQ4</span>
+          <Link href="/dashboard" aria-label="Inicio">
+            <svg viewBox="0 0 40 40" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+              <rect width="40" height="40" rx="8" fill="white" stroke="#e5e7eb" strokeWidth="1"/>
+              <text x="20" y="29" fontFamily="Georgia, serif" fontSize="28" fontWeight="bold" fill="black" textAnchor="middle">$</text>
+            </svg>
+          </Link>
 
           {/* Desktop nav */}
           {!isLogin && (

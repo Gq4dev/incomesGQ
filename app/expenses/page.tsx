@@ -31,6 +31,7 @@ const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   suscripciones: 'Suscripciones',
   seguros: 'Seguros',
   otros: 'Otros',
+  ahorros: 'Ahorros',
 }
 
 export default function ExpensesPage() {

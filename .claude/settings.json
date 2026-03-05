@@ -12,7 +12,11 @@
       "Bash(npm install lucide-react)",
       "Bash(npm run build)",
       "Bash(npm install recharts)",
-      "Bash(npx shadcn@latest add collapsible --yes)"
+      "Bash(npx shadcn@latest add collapsible --yes)",
+      "Bash(python3 -c \":*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Guillote\\Desktop\\GQ4\\lib\\utils"
     ]
   }
 }

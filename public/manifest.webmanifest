@@ -1,0 +1,17 @@
+{
+  "name": "GQ4",
+  "short_name": "GQ4",
+  "description": "Control personal de ingresos y egresos",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -16,7 +16,7 @@ export interface IncomeEntry {
   created_at: string
 }
 
-export type ExpenseCategory = 'alquiler' | 'servicios' | 'suscripciones' | 'seguros' | 'otros'
+export type ExpenseCategory = 'alquiler' | 'servicios' | 'suscripciones' | 'seguros' | 'otros' | 'ahorros'
 
 export interface ExpenseEntry {
   id: string

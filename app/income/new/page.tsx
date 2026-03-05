@@ -7,7 +7,6 @@ import { Provider } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -15,8 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { calcUSD, formatUSD } from '@/lib/utils/currency'
-import { currentYearMonth, monthOptions } from '@/lib/utils/date'
+import { calcUSD, formatUSD, formatInputARS, parseInputARS } from '@/lib/utils/currency'
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
 
 export default function NewIncomePage() {
   const supabase = createClient()
@@ -26,7 +28,7 @@ export default function NewIncomePage() {
   const [providerId, setProviderId] = useState('')
   const [amountARS, setAmountARS] = useState('')
   const [usdRate, setUsdRate] = useState('')
-  const [date, setDate] = useState(currentYearMonth())
+  const [date, setDate] = useState(todayISO())
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -39,21 +41,27 @@ export default function NewIncomePage() {
       .then(({ data }) => setProviders(data ?? []))
   }, [])
 
-  const previewUSD =
-    amountARS && usdRate
-      ? formatUSD(calcUSD(Number(amountARS.replace(/\./g, '').replace(',', '.')), Number(usdRate.replace(',', '.'))))
-      : null
+  function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const stripped = e.target.value.replace(/\./g, '')
+    const cleaned = stripped.replace(/[^\d,]/g, '')
+    setAmountARS(formatInputARS(cleaned))
+  }
+
+  const parsedARS = parseInputARS(amountARS)
+  const parsedRate = Number(usdRate.replace(',', '.'))
+  const previewUSD = parsedARS && parsedRate ? formatUSD(calcUSD(parsedARS, parsedRate)) : null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
-    const ars = Number(amountARS.replace(/\./g, '').replace(',', '.'))
+    const ars = parseInputARS(amountARS)
     const rate = Number(usdRate.replace(',', '.'))
 
     if (!providerId) return setError('Seleccioná un cliente.')
     if (!ars || ars <= 0) return setError('Ingresá un monto válido.')
     if (!rate || rate <= 0) return setError('Ingresá el tipo de cambio.')
+    if (!date) return setError('Seleccioná una fecha.')
 
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
@@ -98,21 +106,15 @@ export default function NewIncomePage() {
           </Select>
         </div>
 
-        {/* Período */}
+        {/* Fecha */}
         <div className="space-y-1.5">
-          <Label>Período</Label>
-          <Select value={date} onValueChange={setDate}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {monthOptions().map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Fecha</Label>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            max={todayISO()}
+          />
         </div>
 
         {/* Monto ARS */}
@@ -120,10 +122,10 @@ export default function NewIncomePage() {
           <Label>Monto ($ARS)</Label>
           <Input
             type="text"
-            inputMode="decimal"
-            placeholder="Ej: 500000"
+            inputMode="numeric"
+            placeholder="Ej: 500.000"
             value={amountARS}
-            onChange={(e) => setAmountARS(e.target.value)}
+            onChange={handleAmountChange}
           />
         </div>
 
@@ -133,7 +135,7 @@ export default function NewIncomePage() {
           <Input
             type="text"
             inputMode="decimal"
-            placeholder="Ej: 1250"
+            placeholder="Ej: 1.250"
             value={usdRate}
             onChange={(e) => setUsdRate(e.target.value)}
           />
@@ -155,9 +157,7 @@ export default function NewIncomePage() {
           />
         </div>
 
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" className="w-full" disabled={saving}>
           {saving ? 'Guardando...' : 'Guardar ingreso'}

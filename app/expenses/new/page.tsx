@@ -14,8 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { currentYearMonth, monthOptions } from '@/lib/utils/date'
+import { formatInputARS, parseInputARS } from '@/lib/utils/currency'
 import { cn } from '@/lib/utils'
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
 
 const CATEGORIES: { value: ExpenseCategory; label: string }[] = [
   { value: 'alquiler', label: 'Alquiler' },
@@ -23,6 +27,7 @@ const CATEGORIES: { value: ExpenseCategory; label: string }[] = [
   { value: 'suscripciones', label: 'Suscripciones' },
   { value: 'seguros', label: 'Seguros' },
   { value: 'otros', label: 'Otros' },
+  { value: 'ahorros', label: 'Ahorros' },
 ]
 
 export default function NewExpensePage() {
@@ -33,18 +38,25 @@ export default function NewExpensePage() {
   const [category, setCategory] = useState<ExpenseCategory | ''>('')
   const [description, setDescription] = useState('')
   const [amountARS, setAmountARS] = useState('')
-  const [date, setDate] = useState(currentYearMonth())
+  const [date, setDate] = useState(todayISO())
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const stripped = e.target.value.replace(/\./g, '')
+    const cleaned = stripped.replace(/[^\d,]/g, '')
+    setAmountARS(formatInputARS(cleaned))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
-    const ars = Number(amountARS.replace(/\./g, '').replace(',', '.'))
+    const ars = parseInputARS(amountARS)
 
     if (!category) return setError('Seleccioná una categoría.')
     if (!ars || ars <= 0) return setError('Ingresá un monto válido.')
+    if (!date) return setError('Seleccioná una fecha.')
 
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
@@ -135,33 +147,25 @@ export default function NewExpensePage() {
           <Label>Monto ($ARS)</Label>
           <Input
             type="text"
-            inputMode="decimal"
-            placeholder="Ej: 150000"
+            inputMode="numeric"
+            placeholder="Ej: 150.000"
             value={amountARS}
-            onChange={(e) => setAmountARS(e.target.value)}
+            onChange={handleAmountChange}
           />
         </div>
 
-        {/* Período */}
+        {/* Fecha */}
         <div className="space-y-1.5">
-          <Label>Período</Label>
-          <Select value={date} onValueChange={setDate}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {monthOptions().map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Fecha</Label>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            max={todayISO()}
+          />
         </div>
 
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" className="w-full" disabled={saving}>
           {saving ? 'Guardando...' : 'Guardar egreso'}

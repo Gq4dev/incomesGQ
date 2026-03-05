@@ -8,8 +8,9 @@ import { BottomNav } from '@/components/layout/BottomNav'
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
 
 export const metadata: Metadata = {
-  title: 'GQ4 — Ingresos',
+  title: 'GQ4',
   description: 'Control personal de ingresos y facturación',
+  manifest: '/manifest.webmanifest',
 }
 
 export const viewport: Viewport = {
