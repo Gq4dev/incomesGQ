@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, PiggyBank, Scale } from 'lucide-react'
 import {
   PieChart,
   Pie,
@@ -92,7 +92,6 @@ export default function DashboardPage() {
   const [filterMonth, setFilterMonth] = useState('all')
   const [loading, setLoading] = useState(true)
   const [userName, setUserName] = useState('')
-  const [activeChart, setActiveChart] = useState(0)
 
   const fetchData = useCallback(async () => {
     const [{ data: income }, { data: expenses }, { data: provs }, { data: { user } }] = await Promise.all([
@@ -209,12 +208,9 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-2 md:gap-3">
             <Link href="/income/new" className="block">
               <Card className="shadow-sm border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer h-full">
-                <CardContent className="px-4 py-3 md:py-5">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                    <p className="text-[10px] font-semibold text-primary/70 uppercase tracking-widest">Ingresos</p>
-                  </div>
-                  <p className="text-lg font-bold tabular-nums leading-none tracking-tight text-primary">
+                <CardContent className="flex flex-col gap-2 px-3 py-2.5 md:py-4 items-center">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                  <p className="text-xl md:text-2xl font-bold tabular-nums leading-none tracking-tight text-primary text-center">
                     {mask(formatARS(totalIngresos))}
                   </p>
                 </CardContent>
@@ -223,12 +219,9 @@ export default function DashboardPage() {
 
             <Link href="/expenses/new" className="block">
               <Card className="shadow-sm border-destructive/20 bg-destructive/5 hover:bg-destructive/10 transition-colors cursor-pointer h-full">
-                <CardContent className="px-4 py-3 md:py-5">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-                    <p className="text-[10px] font-semibold text-destructive/70 uppercase tracking-widest">Egresos</p>
-                  </div>
-                  <p className="text-lg font-bold tabular-nums leading-none tracking-tight text-destructive">
+                <CardContent className="flex flex-col gap-2 px-3 py-2.5 md:py-4 items-center">
+                  <TrendingDown className="h-6 w-6 text-destructive" />
+                  <p className="text-xl md:text-2xl font-bold tabular-nums leading-none tracking-tight text-destructive text-center">
                     {mask(formatARS(totalEgresos))}
                   </p>
                 </CardContent>
@@ -236,94 +229,78 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Neto */}
-          <Card className={cn(
-            'shadow-sm',
-            neto >= 0 ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-destructive/20 bg-destructive/5'
-          )}>
-            <CardContent className="flex items-center justify-between px-5 py-4">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-                Resultado neto
-              </p>
-              <p className={cn(
-                'text-2xl font-bold tabular-nums leading-none tracking-tight',
-                neto >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
-              )}>
-                {mask(formatARS(neto))}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Ahorros */}
-          {totalAhorros > 0 && (
-            <Card className="shadow-sm border-yellow-500/20 bg-yellow-500/5">
-              <CardContent className="flex items-center justify-between px-5 py-4">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-                  Ahorros
-                </p>
-                <p className="text-2xl font-bold tabular-nums leading-none tracking-tight text-yellow-600 dark:text-yellow-400">
-                  {mask(formatARS(totalAhorros))}
+          {/* Neto + Ahorros */}
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
+            <Card className={cn(
+              'shadow-sm',
+              neto >= 0 ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-destructive/20 bg-destructive/5'
+            )}>
+              <CardContent className="flex flex-col gap-2 px-3 py-2.5 md:py-4 items-center">
+                <Scale className={cn('h-6 w-6', neto >= 0 ? 'text-emerald-500' : 'text-destructive')} />
+                <p className={cn(
+                  'text-xl md:text-2xl font-bold tabular-nums leading-none tracking-tight text-center',
+                  neto >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+                )}>
+                  {mask(formatARS(neto))}
                 </p>
               </CardContent>
             </Card>
-          )}
 
-          {/* Carousel de gráficos */}
+            {totalAhorros > 0 ? (
+              <Card className="shadow-sm border-yellow-500/20 bg-yellow-500/5">
+                <CardContent className="flex flex-col gap-2 px-3 py-2.5 md:py-4 items-center">
+                  <PiggyBank className="h-6 w-6 text-yellow-500" />
+                  <p className="text-xl md:text-2xl font-bold tabular-nums leading-none tracking-tight text-yellow-600 dark:text-yellow-400 text-center">
+                    {mask(formatARS(totalAhorros))}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div />
+            )}
+          </div>
+
+          {/* Gráficos swipeables */}
           {charts.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                  {charts[activeChart % charts.length].title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-4">
-                <div className="w-full h-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={charts[activeChart % charts.length].data}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={48}
-                        outerRadius={76}
-                        paddingAngle={2}
-                      >
-                        {charts[activeChart % charts.length].data.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<PieTooltip mask={mask} />} />
-                      <Legend
-                        iconSize={8}
-                        iconType="circle"
-                        wrapperStyle={{ fontSize: 11 }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Dots */}
-                {charts.length > 1 && (
-                  <div className="flex justify-center gap-2 mt-2">
-                    {charts.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setActiveChart(i)}
-                        className={cn(
-                          'w-2 h-2 rounded-full transition-colors',
-                          i === activeChart % charts.length
-                            ? 'bg-foreground'
-                            : 'bg-muted-foreground/30'
-                        )}
-                        aria-label={charts[i].title}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-2 md:overflow-visible md:pb-0 md:mx-0 md:px-0 scrollbar-hide">
+              {charts.map((chart, i) => (
+                <Card key={i} className="min-w-[calc(100%-2rem)] snap-center shrink-0 md:min-w-0 md:shrink">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                      {chart.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pb-4">
+                    <div className="w-full h-52">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={chart.data}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={48}
+                            outerRadius={76}
+                            paddingAngle={2}
+                          >
+                            {chart.data.map((entry, j) => (
+                              <Cell key={j} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<PieTooltip mask={mask} />} />
+                          <Legend
+                            iconSize={8}
+                            iconType="circle"
+                            wrapperStyle={{ fontSize: 11 }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
 
         </>
