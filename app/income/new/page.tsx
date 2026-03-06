@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Provider } from '@/types'
@@ -14,10 +14,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { calcUSD, formatUSD, formatInputARS, parseInputARS } from '@/lib/utils/currency'
+import { calcUSD, formatUSD, formatARS, formatInputARS, parseInputARS } from '@/lib/utils/currency'
+import { RefreshCw } from 'lucide-react'
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
+}
+
+async function fetchBlueRate(): Promise<number> {
+  const res = await fetch('https://dolarapi.com/v1/dolares/blue')
+  if (!res.ok) throw new Error('No se pudo obtener la cotización')
+  const data = await res.json()
+  return data.venta as number
 }
 
 export default function NewIncomePage() {
@@ -27,11 +35,26 @@ export default function NewIncomePage() {
   const [providers, setProviders] = useState<Provider[]>([])
   const [providerId, setProviderId] = useState('')
   const [amountARS, setAmountARS] = useState('')
-  const [usdRate, setUsdRate] = useState('')
+  const [usdRate, setUsdRate] = useState<number | null>(null)
+  const [rateLoading, setRateLoading] = useState(true)
+  const [rateError, setRateError] = useState(false)
   const [date, setDate] = useState(todayISO())
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const loadRate = useCallback(async () => {
+    setRateLoading(true)
+    setRateError(false)
+    try {
+      const rate = await fetchBlueRate()
+      setUsdRate(rate)
+    } catch {
+      setRateError(true)
+    } finally {
+      setRateLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     supabase
@@ -39,7 +62,8 @@ export default function NewIncomePage() {
       .select('*')
       .order('name')
       .then(({ data }) => setProviders(data ?? []))
-  }, [])
+    loadRate()
+  }, [loadRate])
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const stripped = e.target.value.replace(/\./g, '')
@@ -48,19 +72,17 @@ export default function NewIncomePage() {
   }
 
   const parsedARS = parseInputARS(amountARS)
-  const parsedRate = Number(usdRate.replace(',', '.'))
-  const previewUSD = parsedARS && parsedRate ? formatUSD(calcUSD(parsedARS, parsedRate)) : null
+  const previewUSD = parsedARS && usdRate ? formatUSD(calcUSD(parsedARS, usdRate)) : null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
     const ars = parseInputARS(amountARS)
-    const rate = Number(usdRate.replace(',', '.'))
 
     if (!providerId) return setError('Seleccioná un cliente.')
     if (!ars || ars <= 0) return setError('Ingresá un monto válido.')
-    if (!rate || rate <= 0) return setError('Ingresá el tipo de cambio.')
+    if (!usdRate) return setError('No se pudo obtener la cotización del dólar.')
     if (!date) return setError('Seleccioná una fecha.')
 
     setSaving(true)
@@ -69,7 +91,7 @@ export default function NewIncomePage() {
     const { error: dbError } = await supabase.from('income_entries').insert({
       provider_id: providerId,
       amount_ars: ars,
-      usd_rate: rate,
+      usd_rate: usdRate,
       date,
       notes: notes.trim() || null,
       user_id: user.id,
@@ -129,16 +151,27 @@ export default function NewIncomePage() {
           />
         </div>
 
-        {/* Tipo de cambio */}
+        {/* Cotización dólar blue */}
         <div className="space-y-1.5">
-          <Label>Tipo de cambio (USD)</Label>
-          <Input
-            type="text"
-            inputMode="decimal"
-            placeholder="Ej: 1.250"
-            value={usdRate}
-            onChange={(e) => setUsdRate(e.target.value)}
-          />
+          <Label>Cotización dólar blue</Label>
+          <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+            {rateLoading ? (
+              <span className="text-muted-foreground">Obteniendo cotización...</span>
+            ) : rateError ? (
+              <span className="text-destructive">No se pudo obtener</span>
+            ) : (
+              <span className="font-semibold">{usdRate ? formatARS(usdRate) : '—'}</span>
+            )}
+            <button
+              type="button"
+              onClick={loadRate}
+              disabled={rateLoading}
+              className="ml-auto text-muted-foreground hover:text-foreground disabled:opacity-40"
+              aria-label="Actualizar cotización"
+            >
+              <RefreshCw size={15} className={rateLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
           {previewUSD && (
             <p className="text-xs text-muted-foreground">
               Equivale a{' '}
@@ -159,7 +192,7 @@ export default function NewIncomePage() {
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <Button type="submit" className="w-full" disabled={saving}>
+        <Button type="submit" className="w-full" disabled={saving || rateLoading}>
           {saving ? 'Guardando...' : 'Guardar ingreso'}
         </Button>
       </form>

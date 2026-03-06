@@ -25,6 +25,7 @@ export interface ExpenseEntry {
   description?: string
   amount_ars: number
   date: string // YYYY-MM
+  tags?: string[]
   created_at: string
 }
 

@@ -65,7 +65,8 @@ export default function ExpensesPage() {
   const totalVariables = filtered.filter((e) => !e.is_fixed).reduce((s, e) => s + e.amount_ars, 0)
 
   const byMonth = filtered.reduce<Record<string, ExpenseEntry[]>>((acc, e) => {
-    acc[e.date] = acc[e.date] ? [...acc[e.date], e] : [e]
+    const key = e.date.slice(0, 7)
+    acc[key] = acc[key] ? [...acc[key], e] : [e]
     return acc
   }, {})
   const months = Object.keys(byMonth).sort((a, b) => b.localeCompare(a))
@@ -194,11 +195,22 @@ export default function ExpensesPage() {
                               {entry.is_fixed ? 'Fijo' : 'Variable'}
                             </Badge>
                           </div>
-                          {entry.description && (
-                            <span className="text-[11px] text-muted-foreground">
-                              {entry.description}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {entry.description && (
+                              <span className="text-[11px] text-muted-foreground mr-1">
+                                {entry.description}
+                              </span>
+                            )}
+                            {entry.tags && entry.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {entry.tags.map((tag, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-[9px] px-1 py-0 h-3.5 bg-muted/30">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0 ml-3">
                           <p className="text-[13px] font-semibold tabular-nums">

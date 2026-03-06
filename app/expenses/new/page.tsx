@@ -39,6 +39,7 @@ export default function NewExpensePage() {
   const [description, setDescription] = useState('')
   const [amountARS, setAmountARS] = useState('')
   const [date, setDate] = useState(todayISO())
+  const [tags, setTags] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -61,12 +62,19 @@ export default function NewExpensePage() {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setError('No autenticado.'); setSaving(false); return }
+
+    const tagsArray = tags
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0)
+
     const { error: dbError } = await supabase.from('expense_entries').insert({
       category,
       is_fixed: isFixed,
       description: description.trim() || null,
       amount_ars: ars,
       date,
+      tags: tagsArray.length > 0 ? tagsArray : null,
       user_id: user.id,
     })
 
@@ -151,6 +159,16 @@ export default function NewExpensePage() {
             placeholder="Ej: 150.000"
             value={amountARS}
             onChange={handleAmountChange}
+          />
+        </div>
+
+        {/* Etiquetas */}
+        <div className="space-y-1.5">
+          <Label>Etiquetas (opcional)</Label>
+          <Input
+            placeholder="Ej: cine, regalos, sushi (separadas por coma)"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
           />
         </div>
 
