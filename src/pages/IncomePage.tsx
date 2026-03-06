@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ChevronDown, Plus } from 'lucide-react'
+import { ChevronDown, Plus, Trash2 } from 'lucide-react'
 import { MonthlyChart, ChartEntry } from '@/components/income/MonthlyChart'
 import { cn } from '@/lib/utils'
 
@@ -87,6 +87,11 @@ export default function IncomePage() {
       setOpenMonths(new Set([months[0]]))
     }
   }, [months])
+
+  async function deleteEntry(id: string) {
+    await supabase.from('income_entries').delete().eq('id', id)
+    setEntries((prev) => prev.filter((e) => e.id !== id))
+  }
 
   function toggleMonth(month: string) {
     setOpenMonths((prev) => {
@@ -234,13 +239,23 @@ export default function IncomePage() {
                             TC {mask(String(entry.usd_rate))}
                           </span>
                         </div>
-                        <div className="text-right shrink-0 ml-3">
-                          <p className="text-[13px] font-semibold tabular-nums">
-                            {mask(formatARS(entry.amount_ars))}
-                          </p>
-                          <p className="text-[12px] text-primary font-medium tabular-nums">
-                            {mask(formatUSD(entry.amount_usd))}
-                          </p>
+                        <div className="flex items-center gap-2 shrink-0 ml-3">
+                          <div className="text-right">
+                            <p className="text-[13px] font-semibold tabular-nums">
+                              {mask(formatARS(entry.amount_ars))}
+                            </p>
+                            <p className="text-[12px] text-primary font-medium tabular-nums">
+                              {mask(formatUSD(entry.amount_usd))}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => deleteEntry(entry.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     ))}
