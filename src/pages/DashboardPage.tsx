@@ -1,7 +1,5 @@
-'use client'
-
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
+import { Link } from 'react-router-dom'
 import { createClient } from '@/lib/supabase/client'
 import { IncomeEntry, ExpenseEntry, ExpenseCategory, Provider } from '@/types'
 import { formatARS } from '@/lib/utils/currency'
@@ -204,9 +202,8 @@ export default function DashboardPage() {
         <p className="text-muted-foreground text-sm">Cargando...</p>
       ) : (
         <>
-          {/* Cards Ingresos + Egresos */}
           <div className="grid grid-cols-2 gap-2 md:gap-3">
-            <Link href="/income/new" className="block">
+            <Link to="/income/new" className="block">
               <Card className="shadow-sm border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer h-full">
                 <CardContent className="flex flex-col gap-2 px-3 py-2.5 md:py-4 items-center">
                   <TrendingUp className="h-6 w-6 text-primary" />
@@ -217,7 +214,7 @@ export default function DashboardPage() {
               </Card>
             </Link>
 
-            <Link href="/expenses/new" className="block">
+            <Link to="/expenses/new" className="block">
               <Card className="shadow-sm border-destructive/20 bg-destructive/5 hover:bg-destructive/10 transition-colors cursor-pointer h-full">
                 <CardContent className="flex flex-col gap-2 px-3 py-2.5 md:py-4 items-center">
                   <TrendingDown className="h-6 w-6 text-destructive" />
@@ -229,7 +226,6 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Neto + Ahorros */}
           <div className="grid grid-cols-2 gap-2 md:gap-3">
             <Card className={cn(
               'shadow-sm',
@@ -260,7 +256,6 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Gráficos swipeables */}
           {charts.length > 0 && (
             <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-2 md:overflow-visible md:pb-0 md:mx-0 md:px-0 scrollbar-hide">
               {charts.map((chart, i) => (
@@ -302,7 +297,6 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
-
         </>
       )}
     </div>

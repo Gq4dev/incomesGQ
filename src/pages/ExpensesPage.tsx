@@ -1,7 +1,5 @@
-'use client'
-
 import { useEffect, useState, useCallback, useRef } from 'react'
-import Link from 'next/link'
+import { Link } from 'react-router-dom'
 import { createClient } from '@/lib/supabase/client'
 import { ExpenseEntry, ExpenseCategory } from '@/types'
 import { formatARS } from '@/lib/utils/currency'
@@ -123,7 +121,7 @@ export default function ExpensesPage() {
             Excel
           </Button>
           <Button asChild size="sm">
-            <Link href="/expenses/new">
+            <Link to="/expenses/new">
               <Plus className="h-4 w-4 mr-1" />
               Agregar
             </Link>
@@ -131,7 +129,6 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      {/* Filtro año */}
       <div className="flex gap-2">
         <Select value={filterYear} onValueChange={(v) => { setFilterYear(v); setFilterTag(null) }}>
           <SelectTrigger className="flex-1">
@@ -146,7 +143,6 @@ export default function ExpensesPage() {
         </Select>
       </div>
 
-      {/* Tags */}
       {allTags.length > 0 && (
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
           {allTags.map((tag) => (
@@ -166,7 +162,6 @@ export default function ExpensesPage() {
         </div>
       )}
 
-      {/* Informe de tag seleccionado */}
       {filterTag && (
         <Card className="shadow-sm border-primary/20 bg-primary/5">
           <CardContent className="px-5 py-4 flex items-center justify-between">
@@ -188,7 +183,6 @@ export default function ExpensesPage() {
         </Card>
       )}
 
-      {/* Totales */}
       <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
         <Card className="shadow-sm">
           <CardContent className="flex items-center justify-between px-5 py-4 md:flex-col md:items-start md:py-5">
@@ -213,7 +207,6 @@ export default function ExpensesPage() {
         </Card>
       </div>
 
-      {/* Lista por mes */}
       {loading ? (
         <p className="text-muted-foreground text-sm">Cargando...</p>
       ) : months.length === 0 ? (

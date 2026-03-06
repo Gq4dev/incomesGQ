@@ -49,19 +49,18 @@
 
 :root {
   --radius: 0.75rem;
+  --font-geist: 'Geist Variable', system-ui, sans-serif;
+  --font-geist-mono: 'Geist Variable Mono', monospace;
 
-  /* Background off-white suave, no blanco puro */
   --background: oklch(0.977 0.004 264);
   --foreground: oklch(0.13 0.02 264);
 
-  /* Cards blancos para destacar sobre el bg */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.13 0.02 264);
 
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.13 0.02 264);
 
-  /* Primary: indigo */
   --primary: oklch(0.51 0.22 264);
   --primary-foreground: oklch(0.99 0 0);
 

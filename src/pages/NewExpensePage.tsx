@@ -1,7 +1,5 @@
-'use client'
-
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigate } from 'react-router-dom'
 import { createClient } from '@/lib/supabase/client'
 import { ExpenseCategory } from '@/types'
 import { Button } from '@/components/ui/button'
@@ -32,7 +30,7 @@ const CATEGORIES: { value: ExpenseCategory; label: string }[] = [
 
 export default function NewExpensePage() {
   const supabase = createClient()
-  const router = useRouter()
+  const navigate = useNavigate()
 
   const [isFixed, setIsFixed] = useState(true)
   const [category, setCategory] = useState<ExpenseCategory | ''>('')
@@ -84,7 +82,7 @@ export default function NewExpensePage() {
       return
     }
 
-    router.push('/expenses')
+    navigate('/expenses')
   }
 
   return (
@@ -92,7 +90,6 @@ export default function NewExpensePage() {
       <h1 className="text-xl font-semibold">Cargar egreso</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Tipo: Fijo / Variable */}
         <div className="space-y-1.5">
           <Label>Tipo</Label>
           <div className="flex gap-2">
@@ -123,7 +120,6 @@ export default function NewExpensePage() {
           </div>
         </div>
 
-        {/* Categoría */}
         <div className="space-y-1.5">
           <Label>Categoría</Label>
           <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory)}>
@@ -140,7 +136,6 @@ export default function NewExpensePage() {
           </Select>
         </div>
 
-        {/* Descripción */}
         <div className="space-y-1.5">
           <Label>Descripción (opcional)</Label>
           <Input
@@ -150,7 +145,6 @@ export default function NewExpensePage() {
           />
         </div>
 
-        {/* Monto ARS */}
         <div className="space-y-1.5">
           <Label>Monto ($ARS)</Label>
           <Input
@@ -162,7 +156,6 @@ export default function NewExpensePage() {
           />
         </div>
 
-        {/* Etiquetas */}
         <div className="space-y-1.5">
           <Label>Etiquetas (opcional)</Label>
           <Input
@@ -172,7 +165,6 @@ export default function NewExpensePage() {
           />
         </div>
 
-        {/* Fecha */}
         <div className="space-y-1.5">
           <Label>Fecha</Label>
           <Input

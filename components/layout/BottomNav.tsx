@@ -1,7 +1,4 @@
-'use client'
-
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Link, useLocation } from 'react-router-dom'
 import { BarChart2, Users, TrendingUp, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -13,7 +10,7 @@ const navItems = [
 ]
 
 export function BottomNav() {
-  const pathname = usePathname()
+  const { pathname } = useLocation()
 
   if (pathname === '/login') return null
 
@@ -27,7 +24,7 @@ export function BottomNav() {
           return (
             <Link
               key={href}
-              href={href}
+              to={href}
               className="flex flex-col items-center gap-1 min-w-[52px] min-h-[44px] justify-center"
             >
               <div className={cn(

@@ -1,7 +1,4 @@
-'use client'
-
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePrivacyMode } from '@/hooks/usePrivacyMode'
@@ -17,23 +14,22 @@ const navItems = [
 
 export function TopBar() {
   const { isPrivate, toggle } = usePrivacyMode()
-  const pathname = usePathname()
-  const router = useRouter()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
   const supabase = createClient()
 
   const isLogin = pathname === '/login'
 
   async function handleLogout() {
     await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
+    navigate('/login')
   }
 
   return (
     <header className="sticky top-0 z-40 bg-background border-b border-border">
       <div className="flex items-center justify-between h-14 px-4 max-w-2xl mx-auto">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" aria-label="Inicio">
+          <Link to="/dashboard" aria-label="Inicio">
             <svg viewBox="0 0 40 40" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
               <rect width="40" height="40" rx="8" fill="white" stroke="#e5e7eb" strokeWidth="1"/>
               <text x="20" y="29" fontFamily="Georgia, serif" fontSize="28" fontWeight="bold" fill="black" textAnchor="middle">$</text>
@@ -48,7 +44,7 @@ export function TopBar() {
                 return (
                   <Link
                     key={href}
-                    href={href}
+                    to={href}
                     className={cn(
                       'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
                       active

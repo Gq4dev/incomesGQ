@@ -1,7 +1,5 @@
-'use client'
-
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigate } from 'react-router-dom'
 import { createClient } from '@/lib/supabase/client'
 import { Provider } from '@/types'
 import { Button } from '@/components/ui/button'
@@ -30,7 +28,7 @@ async function fetchBlueRate(): Promise<number> {
 
 export default function NewIncomePage() {
   const supabase = createClient()
-  const router = useRouter()
+  const navigate = useNavigate()
 
   const [providers, setProviders] = useState<Provider[]>([])
   const [providerId, setProviderId] = useState('')
@@ -103,7 +101,7 @@ export default function NewIncomePage() {
       return
     }
 
-    router.push('/income')
+    navigate('/income')
   }
 
   return (
@@ -111,7 +109,6 @@ export default function NewIncomePage() {
       <h1 className="text-xl font-semibold">Cargar ingreso</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Cliente */}
         <div className="space-y-1.5">
           <Label>Cliente</Label>
           <Select value={providerId} onValueChange={setProviderId}>
@@ -128,7 +125,6 @@ export default function NewIncomePage() {
           </Select>
         </div>
 
-        {/* Fecha */}
         <div className="space-y-1.5">
           <Label>Fecha</Label>
           <Input
@@ -139,7 +135,6 @@ export default function NewIncomePage() {
           />
         </div>
 
-        {/* Monto ARS */}
         <div className="space-y-1.5">
           <Label>Monto ($ARS)</Label>
           <Input
@@ -151,7 +146,6 @@ export default function NewIncomePage() {
           />
         </div>
 
-        {/* Cotización dólar blue */}
         <div className="space-y-1.5">
           <Label>Cotización dólar blue</Label>
           <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
@@ -180,7 +174,6 @@ export default function NewIncomePage() {
           )}
         </div>
 
-        {/* Notas */}
         <div className="space-y-1.5">
           <Label>Notas (opcional)</Label>
           <Input

@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Provider } from '@/types'
@@ -67,7 +65,6 @@ export default function ProvidersPage() {
     <div className="space-y-5">
       <h1 className="text-xl font-semibold">Clientes</h1>
 
-      {/* Add form */}
       <div className="space-y-1.5">
         <div className="flex gap-2">
           <Input
@@ -91,7 +88,6 @@ export default function ProvidersPage() {
         {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
 
-      {/* List */}
       {loading ? (
         <p className="text-muted-foreground text-sm">Cargando...</p>
       ) : providers.length === 0 ? (

@@ -1,7 +1,5 @@
-'use client'
-
 import { useEffect, useState, useCallback, useRef } from 'react'
-import Link from 'next/link'
+import { Link } from 'react-router-dom'
 import { createClient } from '@/lib/supabase/client'
 import { IncomeEntry, Provider } from '@/types'
 import { formatARS, formatUSD } from '@/lib/utils/currency'
@@ -103,14 +101,13 @@ export default function IncomePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Ingresos</h1>
         <Button asChild size="sm">
-          <Link href="/income/new">
+          <Link to="/income/new">
             <Plus className="h-4 w-4 mr-1" />
             Agregar
           </Link>
         </Button>
       </div>
 
-      {/* Filtros */}
       <div className="flex gap-2">
         <Select value={filterYear} onValueChange={setFilterYear}>
           <SelectTrigger className="flex-1">
@@ -137,7 +134,6 @@ export default function IncomePage() {
         </Select>
       </div>
 
-      {/* Totales */}
       <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
         <Card className="shadow-sm">
           <CardContent className="flex items-center justify-between px-5 py-4 md:flex-col md:items-start md:py-5">
@@ -162,7 +158,6 @@ export default function IncomePage() {
         </Card>
       </div>
 
-      {/* Gráfico por proveedor */}
       {chartData.length > 1 && (
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
@@ -176,7 +171,6 @@ export default function IncomePage() {
         </Card>
       )}
 
-      {/* Detalle por mes */}
       {loading ? (
         <p className="text-muted-foreground text-sm">Cargando...</p>
       ) : months.length === 0 ? (
