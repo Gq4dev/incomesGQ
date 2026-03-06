@@ -22,7 +22,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { ChevronDown, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, Plus, Trash2, Download } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import { cn } from '@/lib/utils'
 
 const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
@@ -40,6 +41,7 @@ export default function ExpensesPage() {
 
   const [entries, setEntries] = useState<ExpenseEntry[]>([])
   const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()))
+  const [filterTag, setFilterTag] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [openMonths, setOpenMonths] = useState<Set<string>>(new Set())
 
@@ -55,16 +57,39 @@ export default function ExpensesPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  function exportToExcel() {
+    const rows = tagFiltered.map((e) => ({
+      Fecha: e.date.slice(0, 7),
+      Categoría: CATEGORY_LABELS[e.category],
+      Tipo: e.is_fixed ? 'Fijo' : 'Variable',
+      Descripción: e.description ?? '',
+      Tags: (e.tags ?? []).join(', '),
+      'Monto ARS': e.amount_ars,
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Egresos')
+    const label = filterTag ? `_${filterTag}` : ''
+    XLSX.writeFile(wb, `egresos_${filterYear}${label}.xlsx`)
+  }
+
   async function deleteEntry(id: string) {
     await supabase.from('expense_entries').delete().eq('id', id)
     setEntries((prev) => prev.filter((e) => e.id !== id))
   }
 
   const filtered = entries.filter((e) => e.date.startsWith(filterYear))
-  const totalFijos = filtered.filter((e) => e.is_fixed).reduce((s, e) => s + e.amount_ars, 0)
-  const totalVariables = filtered.filter((e) => !e.is_fixed).reduce((s, e) => s + e.amount_ars, 0)
+  const allTags = [...new Set(filtered.flatMap((e) => e.tags ?? []))].sort()
 
-  const byMonth = filtered.reduce<Record<string, ExpenseEntry[]>>((acc, e) => {
+  const tagFiltered = filterTag
+    ? filtered.filter((e) => e.tags?.includes(filterTag))
+    : filtered
+
+  const totalFijos = tagFiltered.filter((e) => e.is_fixed).reduce((s, e) => s + e.amount_ars, 0)
+  const totalVariables = tagFiltered.filter((e) => !e.is_fixed).reduce((s, e) => s + e.amount_ars, 0)
+  const totalTag = filterTag ? tagFiltered.reduce((s, e) => s + e.amount_ars, 0) : 0
+
+  const byMonth = tagFiltered.reduce<Record<string, ExpenseEntry[]>>((acc, e) => {
     const key = e.date.slice(0, 7)
     acc[key] = acc[key] ? [...acc[key], e] : [e]
     return acc
@@ -92,17 +117,23 @@ export default function ExpensesPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Egresos</h1>
-        <Button asChild size="sm">
-          <Link href="/expenses/new">
-            <Plus className="h-4 w-4 mr-1" />
-            Agregar
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={exportToExcel}>
+            <Download className="h-4 w-4 mr-1" />
+            Excel
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/expenses/new">
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filtro año */}
       <div className="flex gap-2">
-        <Select value={filterYear} onValueChange={setFilterYear}>
+        <Select value={filterYear} onValueChange={(v) => { setFilterYear(v); setFilterTag(null) }}>
           <SelectTrigger className="flex-1">
             <SelectValue />
           </SelectTrigger>
@@ -114,6 +145,48 @@ export default function ExpensesPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Tags */}
+      {allTags.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setFilterTag(filterTag === tag ? null : tag)}
+              className={cn(
+                'shrink-0 rounded-full px-3 py-1 text-xs font-medium border transition-colors',
+                filterTag === tag
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+              )}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Informe de tag seleccionado */}
+      {filterTag && (
+        <Card className="shadow-sm border-primary/20 bg-primary/5">
+          <CardContent className="px-5 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-semibold text-primary/70 uppercase tracking-widest mb-1">
+                #{filterTag}
+              </p>
+              <p className="text-2xl font-bold tabular-nums leading-none text-primary">
+                {mask(formatARS(totalTag))}
+              </p>
+            </div>
+            <button
+              onClick={() => setFilterTag(null)}
+              className="text-xs text-muted-foreground hover:text-foreground border border-border rounded-full px-2.5 py-1 transition-colors"
+            >
+              Quitar filtro
+            </button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Totales */}
       <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
